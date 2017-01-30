@@ -1,7 +1,17 @@
 'use strict';
 
+const jwt = require('jwt-simple');
 const User = require('../models/user');
+const config = require('../config');
 const UNPROCESSABLE_ENTITY = 422;
+
+function tokenForUser(user) {
+  // JWT standard: 
+  // sub subject - who this token is about
+  // iat - issued at time
+  const timestamp = new Date().getTime();
+  return jwt.encode({ sub: user._id, iat: timestamp }, config.secret);
+}
 
 exports.signup = function signup(req, res, next) {
   const { email, password } = req.body;
@@ -34,8 +44,14 @@ exports.signup = function signup(req, res, next) {
       }
 
       // Respond to request indicating the user was created
-      res.json(user);
+      res.json({ token: tokenForUser(user) });
     });
   })
 };
 
+exports.signin = function signin(req, res, next) {
+  // User has already had their email and password auth'd
+  // We just need to give them a token
+  // passport populates 'req.user' with user object of signed in user
+  res.send({ token: tokenForUser(req.user) });
+}
